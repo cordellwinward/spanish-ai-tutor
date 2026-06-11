@@ -3,8 +3,6 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from google.genai import local_tokenizer
-import sentencepiece
-import google.protobuf
 import time
 import warnings
 from google.genai import local_tokenizer
@@ -14,18 +12,15 @@ load_dotenv()
 # Link to Tutorial
 # https://app.dataquest.io/c/169/m/909/guided-project%3A-developing-a-dynamic-ai-chatbot/1/developing-a-dynamic-ai-chatbot
 
-# Use Gemini ai
-
-
-
 
 class ConversationManager:
-    def __init__(self, gemini_key=None, base_url=None):
+    def __init__(self):
         self.gemini_key = os.environ["GEMINI_API_KEY"]
         self.client = genai.Client(api_key=self.gemini_key)
             
         self.conversation_history = []
         self.model = "gemini-3.1-flash-lite"
+
     def chat_completion(self, prompt):
         self.conversation_history.append({"role": "user", "content": prompt})
         content = [
@@ -72,41 +67,44 @@ class ConversationManager:
                     print("Server is unavailable. Please try again")
                     self.conversation_history.pop()
                     return None
-                    
-level = " "
-chat_manager = ConversationManager()
-while True:
-    level = input("Please enter the number corresponding to your spanish level:\n\n\
-1. Beginner 2. Intermediate 3. Advanced\n").lower()
-    if level == "1" or level =="beginner":
-        chat_manager.conversation_history.append({
-            "role": "user",
-            "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching is a beginner in spanish. Focus on giving translations in english initially to help them understand. Always give a translation with a new word"
-        }) 
-        break
-    elif level == "2" or level == "intermediate":
-        chat_manager.conversation_history.append({
-            "role": "user",
-            "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching knows Intermediate spanish. Focus on more common words in conversation, while also occasionally adding in more advanced ones to help them learn."
-        }) 
-        break
-    elif level == "3" or level == "advanced":
-        chat_manager.conversation_history.append({
-            "role": "user",
-            "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching knows Advanced spanish"
-        })
-        break
-    else:
-        print("An Invalid input was made. Please made a valid input.\n")
-print("=" * 40)
-print("Welcome to your AI Spanish Tutor!\n\
-      Type 'quit' to exit")
-print("-" * 40)
-while True:
-    entry= input("Your prompt: ")
-    if entry == "quit":
-        break
-    response = chat_manager.chat_completion(entry)
+def main():                    
+    level = " "
+    chat_manager = ConversationManager()
+    while True:
+        level = input("Please enter the number corresponding to your spanish level:\n\n\
+    1. Beginner 2. Intermediate 3. Advanced\n").lower()
+        if level == "1" or level =="beginner":
+            chat_manager.conversation_history.append({
+                "role": "user",
+                "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching is a beginner in spanish. Focus on giving translations in english initially to help them understand. Always give a translation with a new word"
+            }) 
+            break
+        elif level == "2" or level == "intermediate":
+            chat_manager.conversation_history.append({
+                "role": "user",
+                "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching knows Intermediate spanish. Focus on more common words in conversation, while also occasionally adding in more advanced ones to help them learn."
+            }) 
+            break
+        elif level == "3" or level == "advanced":
+            chat_manager.conversation_history.append({
+                "role": "user",
+                "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching knows Advanced spanish"
+            })
+            break
+        else:
+            print("An Invalid input was made. Please made a valid input.\n")
+    print("=" * 40)
+    print("Welcome to your AI Spanish Tutor!\n\
+        Type 'quit' to exit")
     print("-" * 40)
-    print(f"AI Spanish Tutor: {response}")
-    print("-" * 40)
+    while True:
+        entry= input("Your prompt: ")
+        if entry == "quit":
+            break
+        response = chat_manager.chat_completion(entry)
+        print("-" * 40)
+        print(f"AI Spanish Tutor: {response}")
+        print("-" * 40)
+
+if __name__ == "__main__":
+    main()
