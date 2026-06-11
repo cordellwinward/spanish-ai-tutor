@@ -5,7 +5,6 @@ from google.genai import types
 from google.genai import local_tokenizer
 import time
 import warnings
-from google.genai import local_tokenizer
 warnings.filterwarnings("ignore")
 load_dotenv()
 
@@ -20,6 +19,21 @@ class ConversationManager:
             
         self.conversation_history = []
         self.model = "gemini-3.1-flash-lite"
+    
+    def limit_token_usage(self, content):
+        tokenizer = local_tokenizer.LocalTokenizer(model_name="gemini-2.5-flash-lite")
+        result = tokenizer.count_tokens(content)
+        token_manager = int(result.total_tokens)
+        # print(token_manager)
+        while token_manager > 50000:
+            self.conversation_history.pop(1)
+            content = [
+                {"role": msg["role"], "parts": [{"text": msg["content"]}]}
+                for msg in self.conversation_history
+            ]
+            result = tokenizer.count_tokens(content)
+            token_manager = int(result.total_tokens)
+        return content
 
     def chat_completion(self, prompt):
         self.conversation_history.append({"role": "user", "content": prompt})
@@ -27,6 +41,7 @@ class ConversationManager:
             {"role": msg["role"], "parts": [{"text": msg["content"]}]}
             for msg in self.conversation_history
         ]
+        content = self.limit_token_usage(content)
         for attempt in range(3):
             try:
                 response = self.client.models.generate_content(
@@ -41,23 +56,6 @@ class ConversationManager:
                 )
                 ai_response = response.text
                 self.conversation_history.append({"role": "model", "content": ai_response})
-                
-                tokenizer = local_tokenizer.LocalTokenizer(model_name="gemini-2.5-flash-lite")
-                result = tokenizer.count_tokens(content)
-                token_manager = int(result.total_tokens)
-                # print(token_manager)
-                while True:
-                    if token_manager > 50000:
-                        self.conversation_history.pop(1)
-                        tokenizer = local_tokenizer.LocalTokenizer(model_name= "gemini-2.5-flash-lite")
-                        content = [
-                            {"role": msg["role"], "parts": [{"text": msg["content"]}]}
-                            for msg in self.conversation_history
-                        ]
-                        result = tokenizer.count_tokens(content)
-                        token_manager = int(result.total_tokens)
-                    else:
-                        break
                 return ai_response
             except Exception as e:
                 if attempt < 2:
