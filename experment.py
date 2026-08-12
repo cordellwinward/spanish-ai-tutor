@@ -1,0 +1,107 @@
+import os
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from google.genai import local_tokenizer
+import time
+import warnings
+warnings.filterwarnings("ignore")
+load_dotenv()
+
+# Link to Tutorial
+# https://app.dataquest.io/c/169/m/909/guided-project%3A-developing-a-dynamic-ai-chatbot/1/developing-a-dynamic-ai-chatbot
+
+
+class ConversationManager:
+    def __init__(self):
+        self.gemini_key = os.environ["GEMINI_API_KEY"]
+        self.client = genai.Client(api_key=self.gemini_key)
+        self.conversation_history = []
+        self.model = "gemini-3.1-flash-lite"
+    
+    def limit_token_usage(self, content):
+        tokenizer = local_tokenizer.LocalTokenizer(model_name="gemini-2.5-flash-lite")
+        result = tokenizer.count_tokens(content)
+        token_manager = int(result.total_tokens)
+        # print(token_manager)
+        while token_manager > 50000:
+            self.conversation_history.pop(1)
+            content = [
+                {"role": msg["role"], "parts": [{"text": msg["content"]}]}
+                for msg in self.conversation_history
+            ]
+            result = tokenizer.count_tokens(content)
+            token_manager = int(result.total_tokens)
+        return content
+
+    def chat_completion(self, prompt):
+        self.conversation_history.append({"role": "user", "content": prompt})
+        content = [
+            {"role": msg["role"], "parts": [{"text": msg["content"]}]}
+            for msg in self.conversation_history
+        ]
+        content = self.limit_token_usage(content)
+        for attempt in range(3):
+            try:
+                response = self.client.models.generate_content(
+                    model = self.model,
+                    contents = content,
+                    config=types.GenerateContentConfig(
+                        # temperature=0,
+                        # top_p=0.95,
+                        # top_k=20,
+                        max_output_tokens=200000
+                    )
+                )
+                ai_response = response.text
+                self.conversation_history.append({"role": "model", "content": ai_response})
+                return ai_response
+            except Exception as e:
+                if attempt < 2:
+                    print(f"Error: {e}")
+                    time.sleep(2)
+                else:
+                    print("Server is unavailable. Please try again")
+                    self.conversation_history.pop()
+                    return None
+def main():                    
+    level = " "
+    chat_manager = ConversationManager()
+    while True:
+        level = input("Please enter the number corresponding to your spanish level:\n\n\
+    1. Beginner 2. Intermediate 3. Advanced\n").lower()
+        if level == "1" or level =="beginner":
+            chat_manager.conversation_history.append({
+                "role": "user",
+                "content": "You are a fantasy writer. You focus on writing full fantisy models with word ranges between 7000 and 20000 words. You are creative in world building and design your characters well with character development. Your stories are for young adult audiences, are clean, and focus on popular story telling techniques. They are adventure based, and have real conflict of all types, between characters, within charactors, with enviormental conditions, and with society. Even though your stories are clean, they have complicated plots and themes. They have a introduction, rising action, climax, falling action, and resolution. You also used dialuage to foster conection between characters. Remember, the story should be 7000 to 20000 words in length."
+            }) 
+            break
+        elif level == "2" or level == "intermediate":
+            chat_manager.conversation_history.append({
+                "role": "user",
+                "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching knows Intermediate spanish. Focus on more common words in conversation, while also occasionally adding in more advanced ones to help them learn."
+            }) 
+            break
+        elif level == "3" or level == "advanced":
+            chat_manager.conversation_history.append({
+                "role": "user",
+                "content": "You are a Spanish Language tutor. You help Students to learn Spanish and are friendly, but also honest and direct in order to help your students learn. You prioritize having spanish conversations with them, defining unknown words, and adjusting according to the users ability. When they make a mistake, correct them. Give encouragement when needed. The person you are teaching knows Advanced spanish"
+            })
+            break
+        else:
+            print("An Invalid input was made. Please made a valid input.\n")
+    print("=" * 40)
+    print("Welcome to your AI Spanish Tutor!\n\
+        Type 'quit' to exit")
+    print("-" * 40)
+    while True:
+        entry= input("Your prompt: ")
+        if entry == "quit":
+            break
+        response = chat_manager.chat_completion(entry)
+        print("-" * 40)
+        print(f"AI Spanish Tutor: {response}")
+        print("-" * 40)
+
+if __name__ == "__main__":
+    main()
