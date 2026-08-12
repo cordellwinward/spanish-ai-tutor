@@ -81,6 +81,7 @@ class ConversationManager:
         self.conversation_name = conversation_name
         self.conversation_name_added_to_conversation_names_file = True
         self.is_saved = True
+        return self.conversation_history
     def save_conversation_history(self):
         json_object = {
             "system_prompt" : self.system_prompt,
@@ -105,7 +106,7 @@ class ConversationManager:
 def create_new_conversation():
     saved_coversation_name = None
     while True:
-        saved_conversation = input("Let me ask you a few questions to set up this conversation:\n\n\
+        saved_conversation = input("\nLet me ask you a few questions to set up this conversation:\n\n\
 Would you like to save this conversation? (Y/N) ").lower()
         if saved_conversation in ("y", "yes"):
             while True:
@@ -144,7 +145,7 @@ def ensure_conversation_name_is_unique(conversation_name):
         return True
     with open(f"conversations/{CONVERSATION_NAMES_FILE}") as file:
         names = json.load(file)
-    return conversation_name not in names
+    return conversation_name.lower() not in [name.lower() for name in names]
 
 def print_conversation_names():
     try:
@@ -153,7 +154,12 @@ def print_conversation_names():
             for name in names:
                 print(name)
     except FileNotFoundError as err:
-        print("No past conversations found")
+        print("No Past Conversations Found")
+
+def print_conversation_history(conversation_history):
+    for message in conversation_history:
+        speaker = "Your Prompt" if message["role"] == "user" else "AI Spanish Tutor"
+        print(f"{speaker}: {message['content']}")
 
 def main():
     chat_manager = ConversationManager()
@@ -167,13 +173,17 @@ def main():
             while True:
                 try:
                     saved_conversation_name = input("Which conversation would you like to continue? ").strip()
-                    chat_manager.load_saved_conversation(saved_conversation_name)
+                    conversation_history = chat_manager.load_saved_conversation(saved_conversation_name)
+                    print("\nPrevious conversation:\n")
+                    print_conversation_history(conversation_history)
+                    print("\n(End of previous session)\n")
                     break
                 except FileNotFoundError as err:
-                    print("Conversation does not exsist. Please enter a valid conversation name.")
+                    print("Conversation does not exist. Please enter a valid conversation name.")
             break
         else:
             print("Invalid input. Please enter a valid response.\n")
+    print()
     print("=" * 40)
     print("Welcome to your AI Spanish Tutor!\n\
         Type 'quit' to exit")
